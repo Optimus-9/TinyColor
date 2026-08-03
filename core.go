@@ -7,16 +7,16 @@ import (
 type Format string
 
 const (
-	FormatHex   Format = "hex"
-	FormatHex3  Format = "hex3"
-	FormatHex4  Format = "hex4"
-	FormatHex6  Format = "hex6"
-	FormatHex8  Format = "hex8"
-	FormatRgb   Format = "rgb"
-	FormatPrgb  Format = "prgb"
-	FormatHsl   Format = "hsl"
-	FormatHsv   Format = "hsv"
-	FormatName  Format = "name"
+	FormatHex  Format = "hex"
+	FormatHex3 Format = "hex3"
+	FormatHex4 Format = "hex4"
+	FormatHex6 Format = "hex6"
+	FormatHex8 Format = "hex8"
+	FormatRgb  Format = "rgb"
+	FormatPrgb Format = "prgb"
+	FormatHsl  Format = "hsl"
+	FormatHsv  Format = "hsv"
+	FormatName Format = "name"
 )
 
 type Options struct {
@@ -118,3 +118,28 @@ func (c *Color) IsValid() bool                 { return c.ok }
 func (c *Color) GetOriginalInput() interface{} { return c.originalInput }
 func (c *Color) GetFormat() Format             { return c.format }
 func (c *Color) GetAlpha() float64             { return c.a }
+
+// SetAlpha returns a new Color with the alpha channel set to the given value.
+// Mirrors tinycolor.setAlpha(alpha) in JavaScript.
+func (c *Color) SetAlpha(alpha float64) *Color {
+	copy := *c
+	copy.a = boundAlpha(alpha)
+	copy.roundA = math.Round(copy.a*100) / 100
+	return &copy
+}
+
+// Clone returns a deep copy of the Color.
+// Mirrors tinycolor.clone() in JavaScript.
+func (c *Color) Clone() *Color {
+	copy := *c
+	return &copy
+}
+
+// Equals returns true if both colors resolve to the same RGBA values.
+// Mirrors tinycolor.equals(color2) in JavaScript.
+func (c *Color) Equals(color2 *Color) bool {
+	if color2 == nil {
+		return false
+	}
+	return c.ToRgbString() == color2.ToRgbString()
+}

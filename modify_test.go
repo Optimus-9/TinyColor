@@ -5,222 +5,181 @@ import (
 	"testing"
 )
 
-// -- MOCKS START --
-// Implementing local testing mocks directly inside modify_test.go as per Zero-Conflict File Ownership Rules.
-
-type Options struct {
-	Format       Format
-	GradientType bool
-}
-
-type Format string
-
-const (
-	FormatHex   Format = "hex"
-	FormatHex3  Format = "hex3"
-	FormatHex4  Format = "hex4"
-	FormatHex6  Format = "hex6"
-	FormatHex8  Format = "hex8"
-	FormatRgb   Format = "rgb"
-	FormatPrgb  Format = "prgb"
-	FormatHsl   Format = "hsl"
-	FormatHsv   Format = "hsv"
-	FormatName  Format = "name"
-)
-
-type Color struct {
-	originalInput interface{}
-	r, g, b       float64
-	a             float64
-	roundA        float64
-	format        Format
-	gradientType  bool
-	ok            bool
-}
-
-type HSL struct {
-	H, S, L float64
-}
-
-type HSV struct {
-	H, S, V float64
-}
-
-type RGB struct {
-	R, G, B float64
-	A       float64
-}
-
-func New(input interface{}, opts ...Options) *Color {
-	if c, ok := input.(*Color); ok {
-		return &Color{
-			originalInput: c.originalInput,
-			r:             c.r,
-			g:             c.g,
-			b:             c.b,
-			a:             c.a,
-			roundA:        c.roundA,
-			format:        c.format,
-			gradientType:  c.gradientType,
-			ok:            c.ok,
-		}
-	}
-	if hsl, ok := input.(HSL); ok {
-		return &Color{ok: true, r: hsl.H, g: hsl.S, b: hsl.L}
-	}
-	if rgb, ok := input.(RGB); ok {
-		return &Color{ok: true, r: rgb.R, g: rgb.G, b: rgb.B}
-	}
-	if hsv, ok := input.(HSV); ok {
-		return &Color{ok: true, r: hsv.H, g: hsv.S, b: hsv.V}
-	}
-	return &Color{ok: true}
-}
-
-func (c *Color) ToHsl() HSL {
-	return HSL{H: c.r, S: c.g, L: c.b}
-}
-
-func (c *Color) ToRgb() RGB {
-	return RGB{R: c.r, G: c.g, B: c.b, A: c.a}
-}
-
-func (c *Color) ToHsv() HSV {
-	return HSV{H: c.r, S: c.g, V: c.b}
-}
-// -- MOCKS END --
-
-func round(val float64) float64 {
+// roundTo3 rounds a float to 3 decimal places for stable comparisons.
+func roundTo3(val float64) float64 {
 	return math.Round(val*1000) / 1000
 }
 
+// approxEqual returns true if a and b are within tolerance.
+func approxEqual(a, b, tolerance float64) bool {
+	return math.Abs(a-b) <= tolerance
+}
+
 func TestModify(t *testing.T) {
-	c := New(HSL{H: 100, S: 0.5, L: 0.5})
+	// Use map input to correctly initialise a color with H=100, S=50%, L=50%.
+	c := New(map[string]interface{}{"h": 100, "s": 50, "l": 50})
 
 	t.Run("Lighten", func(t *testing.T) {
 		res := c.Lighten(10)
-		if round(res.b) != 0.6 {
-			t.Errorf("Lighten(10): expected L=0.6, got %v", res.b)
+		hsl := res.ToHsl()
+		if !approxEqual(hsl.L, 0.6, 0.002) {
+			t.Errorf("Lighten(10): expected L≈0.6, got %v", hsl.L)
 		}
 	})
 
 	t.Run("Darken", func(t *testing.T) {
 		res := c.Darken(10)
-		if round(res.b) != 0.4 {
-			t.Errorf("Darken(10): expected L=0.4, got %v", res.b)
+		hsl := res.ToHsl()
+		if !approxEqual(hsl.L, 0.4, 0.002) {
+			t.Errorf("Darken(10): expected L≈0.4, got %v", hsl.L)
 		}
 	})
 
 	t.Run("Saturate", func(t *testing.T) {
 		res := c.Saturate(10)
-		if round(res.g) != 0.6 {
-			t.Errorf("Saturate(10): expected S=0.6, got %v", res.g)
+		hsl := res.ToHsl()
+		if !approxEqual(hsl.S, 0.6, 0.002) {
+			t.Errorf("Saturate(10): expected S≈0.6, got %v", hsl.S)
 		}
 	})
 
 	t.Run("Desaturate", func(t *testing.T) {
 		res := c.Desaturate(10)
-		if round(res.g) != 0.4 {
-			t.Errorf("Desaturate(10): expected S=0.4, got %v", res.g)
+		hsl := res.ToHsl()
+		if !approxEqual(hsl.S, 0.4, 0.002) {
+			t.Errorf("Desaturate(10): expected S≈0.4, got %v", hsl.S)
 		}
 	})
 
 	t.Run("Greyscale", func(t *testing.T) {
 		res := c.Greyscale()
-		if round(res.g) != 0.0 {
-			t.Errorf("Greyscale(): expected S=0.0, got %v", res.g)
+		hsl := res.ToHsl()
+		if !approxEqual(hsl.S, 0.0, 0.002) {
+			t.Errorf("Greyscale(): expected S≈0.0, got %v", hsl.S)
 		}
 	})
 
 	t.Run("Spin", func(t *testing.T) {
 		res := c.Spin(10)
-		if round(res.r) != 110 {
-			t.Errorf("Spin(10): expected H=110, got %v", res.r)
+		hsl := res.ToHsl()
+		if !approxEqual(hsl.H, 110, 1.0) {
+			t.Errorf("Spin(10): expected H≈110, got %v", hsl.H)
 		}
 
 		res2 := c.Spin(-150)
-		if round(res2.r) != 310 {
-			t.Errorf("Spin(-150): expected H=310, got %v", res2.r)
+		hsl2 := res2.ToHsl()
+		if !approxEqual(hsl2.H, 310, 1.0) {
+			t.Errorf("Spin(-150): expected H≈310, got %v", hsl2.H)
 		}
 	})
 }
 
 func TestBrighten(t *testing.T) {
-	c := New(RGB{R: 100, G: 100, B: 100})
+	// RGB struct is now handled natively by inputToRGB.
+	c := New(map[string]interface{}{"r": 100, "g": 100, "b": 100})
 	res := c.Brighten(10)
-	if res.r != 126 || res.g != 126 || res.b != 126 {
-		t.Errorf("Brighten(10): expected 126, got R=%v G=%v B=%v", res.r, res.g, res.b)
+	rgb := res.ToRgb()
+	if !approxEqual(rgb.R, 126, 1) || !approxEqual(rgb.G, 126, 1) || !approxEqual(rgb.B, 126, 1) {
+		t.Errorf("Brighten(10): expected RGB≈(126,126,126), got R=%v G=%v B=%v", rgb.R, rgb.G, rgb.B)
 	}
 }
 
 func TestCombinations(t *testing.T) {
-	c := New(HSL{H: 100, S: 0.5, L: 0.5})
+	c := New(map[string]interface{}{"h": 100, "s": 50, "l": 50})
 
 	t.Run("Complement", func(t *testing.T) {
 		res := c.Complement()
-		if res.r != 280 {
-			t.Errorf("expected 280, got %v", res.r)
+		hsl := res.ToHsl()
+		if !approxEqual(hsl.H, 280, 1.0) {
+			t.Errorf("Complement: expected H≈280, got %v", hsl.H)
 		}
 	})
 
 	t.Run("Polyad", func(t *testing.T) {
 		res := c.Polyad(4)
 		if len(res) != 4 {
-			t.Fatalf("expected 4, got %v", len(res))
+			t.Fatalf("Polyad(4): expected 4 colors, got %v", len(res))
 		}
-		if res[0].r != 100 || res[1].r != 190 || res[2].r != 280 || res[3].r != 10 {
-			t.Errorf("unexpected polyad H values: %v %v %v %v", res[0].r, res[1].r, res[2].r, res[3].r)
+		expected := []float64{100, 190, 280, 10}
+		for i, ex := range expected {
+			h := res[i].ToHsl().H
+			if !approxEqual(h, ex, 1.5) {
+				t.Errorf("Polyad[%d]: expected H≈%v, got %v", i, ex, h)
+			}
 		}
 	})
 
 	t.Run("Triad", func(t *testing.T) {
 		res := c.Triad()
 		if len(res) != 3 {
-			t.Fatalf("expected 3, got %v", len(res))
+			t.Fatalf("Triad: expected 3 colors, got %v", len(res))
 		}
-		if res[0].r != 100 || res[1].r != 220 || res[2].r != 340 {
-			t.Errorf("unexpected triad H values: %v %v %v", res[0].r, res[1].r, res[2].r)
+		expected := []float64{100, 220, 340}
+		for i, ex := range expected {
+			h := res[i].ToHsl().H
+			if !approxEqual(h, ex, 1.5) {
+				t.Errorf("Triad[%d]: expected H≈%v, got %v", i, ex, h)
+			}
 		}
 	})
 
 	t.Run("Tetrad", func(t *testing.T) {
 		res := c.Tetrad()
 		if len(res) != 4 {
-			t.Fatalf("expected 4, got %v", len(res))
+			t.Fatalf("Tetrad: expected 4 colors, got %v", len(res))
 		}
-		if res[0].r != 100 || res[1].r != 190 || res[2].r != 280 || res[3].r != 10 {
-			t.Errorf("unexpected tetrad H values: %v %v %v %v", res[0].r, res[1].r, res[2].r, res[3].r)
+		expected := []float64{100, 190, 280, 10}
+		for i, ex := range expected {
+			h := res[i].ToHsl().H
+			if !approxEqual(h, ex, 1.5) {
+				t.Errorf("Tetrad[%d]: expected H≈%v, got %v", i, ex, h)
+			}
 		}
 	})
 
 	t.Run("SplitComplement", func(t *testing.T) {
 		res := c.SplitComplement()
 		if len(res) != 3 {
-			t.Fatalf("expected 3, got %v", len(res))
+			t.Fatalf("SplitComplement: expected 3 colors, got %v", len(res))
 		}
-		if res[0].r != 100 || res[1].r != 172 || res[2].r != 316 {
-			t.Errorf("unexpected splitcomplement H values")
+		expected := []float64{100, 172, 316}
+		for i, ex := range expected {
+			h := res[i].ToHsl().H
+			if !approxEqual(h, ex, 1.5) {
+				t.Errorf("SplitComplement[%d]: expected H≈%v, got %v", i, ex, h)
+			}
 		}
 	})
 
 	t.Run("Analogous", func(t *testing.T) {
 		res := c.Analogous(6, 30)
 		if len(res) != 6 {
-			t.Fatalf("expected 6, got %v", len(res))
+			t.Fatalf("Analogous: expected 6, got %v", len(res))
 		}
-		if res[1].r != 76 || res[2].r != 88 || res[3].r != 100 || res[4].r != 112 || res[5].r != 124 {
-			t.Errorf("unexpected analogous values")
+		expectedH := []float64{100, 76, 88, 100, 112, 124}
+		// Note: res[0] is New(c) which keeps H=100; subsequent are the shifted steps.
+		for i, ex := range expectedH {
+			h := res[i].ToHsl().H
+			if !approxEqual(h, ex, 2.0) {
+				t.Errorf("Analogous[%d]: expected H≈%v, got %v", i, ex, h)
+			}
 		}
 	})
 
 	t.Run("Monochromatic", func(t *testing.T) {
-		c2 := New(HSV{H: 100, S: 0.5, V: 0.2})
+		// Create via string input to avoid struct-zero alpha ambiguity.
+		c2 := New(map[string]interface{}{"h": 100, "s": 50, "v": 20})
 		res := c2.Monochromatic(6)
 		if len(res) != 6 {
-			t.Fatalf("expected 6, got %v", len(res))
+			t.Fatalf("Monochromatic: expected 6, got %v", len(res))
 		}
-		if round(res[0].b) != 0.2 || round(res[1].b) != 0.367 || round(res[2].b) != 0.533 || round(res[3].b) != 0.7 || round(res[4].b) != 0.867 || round(res[5].b) != 0.033 {
-			t.Errorf("unexpected monochromatic V values: %v %v %v %v %v %v", round(res[0].b), round(res[1].b), round(res[2].b), round(res[3].b), round(res[4].b), round(res[5].b))
+		// V values step by 1/6 ≈ 0.1667; allow ±0.01 to account for RGB round-trip.
+		expectedV := []float64{0.2, 0.367, 0.533, 0.700, 0.867, 0.033}
+		for i, ex := range expectedV {
+			v := res[i].ToHsv().V
+			if !approxEqual(v, ex, 0.01) {
+				t.Errorf("Monochromatic[%d]: expected V≈%v, got %v", i, ex, roundTo3(v))
+			}
 		}
 	})
 }

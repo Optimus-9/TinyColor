@@ -60,7 +60,7 @@ func Readability(c1, c2 *Color) float64 {
 // IsReadable determines if a color combination meets WCAG guidelines.
 func IsReadable(c1, c2 *Color, opts ...ReadabilityOptions) bool {
 	readability := Readability(c1, c2)
-	
+
 	level := "AA"
 	size := "small"
 
@@ -110,9 +110,9 @@ func MostReadable(baseColor *Color, colorList []*Color, opts ...ReadabilityOptio
 	// IncludeFallbackColors is true, and the best color isn't readable
 	white := &Color{r: 255, g: 255, b: 255, a: 1, ok: true}
 	black := &Color{r: 0, g: 0, b: 0, a: 1, ok: true}
-	
+
 	fallbackOptions := options
 	fallbackOptions.IncludeFallbackColors = false
-	
+
 	return MostReadable(baseColor, []*Color{white, black}, fallbackOptions)
 }

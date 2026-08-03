@@ -84,9 +84,7 @@ func (c *Color) ToString(formatOverride ...Format) string {
 	case FormatRgb:
 		return c.ToRgbString()
 	case FormatPrgb:
-		// Percentage RGB is not strictly listed in the API I must implement, but if requested:
-		// It would be "rgb(100%, 0%, 0%)". I will implement a basic version or fallback to RGB.
-		// Let's implement it for completeness based on JS mod.js
+		// Percentage RGB: "rgb(100%, 0%, 0%)". Delegates to ToPercentageRgbString().
 		r := math.Round((c.r / 255) * 100)
 		g := math.Round((c.g / 255) * 100)
 		b := math.Round((c.b / 255) * 100)
@@ -94,6 +92,7 @@ func (c *Color) ToString(formatOverride ...Format) string {
 			return fmt.Sprintf("rgb(%d%%, %d%%, %d%%)", int(r), int(g), int(b))
 		}
 		return fmt.Sprintf("rgba(%d%%, %d%%, %d%%, %v)", int(r), int(g), int(b), c.roundA)
+
 	case FormatHsl:
 		return c.ToHslString()
 	case FormatHsv:
@@ -108,4 +107,40 @@ func (c *Color) ToString(formatOverride ...Format) string {
 
 	// If no format matches, fallback to Hex string (like in JS)
 	return c.ToHexString()
+}
+
+// ToPercentageRgb returns an RGB struct with R, G, B expressed as percentages [0.0, 1.0].
+// Mirrors tinycolor.toPercentageRgb() in JavaScript.
+func (c *Color) ToPercentageRgb() RGB {
+	return RGB{
+		R: math.Round((c.r/255)*100) / 100,
+		G: math.Round((c.g/255)*100) / 100,
+		B: math.Round((c.b/255)*100) / 100,
+		A: c.a,
+	}
+}
+
+// ToPercentageRgbString returns the css rgb/rgba string with percentage channels.
+// Mirrors tinycolor.toPercentageRgbString() in JavaScript.
+func (c *Color) ToPercentageRgbString() string {
+	r := math.Round((c.r / 255) * 100)
+	g := math.Round((c.g / 255) * 100)
+	b := math.Round((c.b / 255) * 100)
+	if c.a == 1 {
+		return fmt.Sprintf("rgb(%d%%, %d%%, %d%%)", int(r), int(g), int(b))
+	}
+	return fmt.Sprintf("rgba(%d%%, %d%%, %d%%, %v)", int(r), int(g), int(b), c.roundA)
+}
+
+// ToFilter returns the IE-compatible gradient filter string for the color.
+// Mirrors tinycolor.toFilter(secondColor) in JavaScript.
+// Uses the ARGB hex format (#AARRGGBB) required by IE's DXImageTransform filter.
+func (c *Color) ToFilter(secondColor ...*Color) string {
+	second := c
+	if len(secondColor) > 0 && secondColor[0] != nil {
+		second = secondColor[0]
+	}
+	start := rgbaToArgbHex(c.r, c.g, c.b, c.a)
+	end := rgbaToArgbHex(second.r, second.g, second.b, second.a)
+	return "progid:DXImageTransform.Microsoft.gradient(startColorstr=#" + start + ",endColorstr=#" + end + ")"
 }

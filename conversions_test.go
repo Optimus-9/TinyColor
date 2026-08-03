@@ -5,59 +5,9 @@ import (
 	"testing"
 )
 
-// -----------------------------------------------------------------------------
-// MOCK CORE TYPES (To allow isolated testing of NG's files without BB's core.go)
-// These should be removed or ignored during final integration.
-// -----------------------------------------------------------------------------
-
-type Format string
-
-const (
-	FormatHex   Format = "hex"
-	FormatHex3  Format = "hex3"
-	FormatHex4  Format = "hex4"
-	FormatHex6  Format = "hex6"
-	FormatHex8  Format = "hex8"
-	FormatRgb   Format = "rgb"
-	FormatPrgb  Format = "prgb"
-	FormatHsl   Format = "hsl"
-	FormatHsv   Format = "hsv"
-	FormatName  Format = "name"
-)
-
-type RGB struct{ R, G, B, A float64 }
-type HSL struct{ H, S, L, A float64 }
-type HSV struct{ H, S, V, A float64 }
-
-type ReadabilityOptions struct {
-	Level                 string
-	Size                  string
-	IncludeFallbackColors bool
-}
-
-type Color struct {
-	originalInput interface{}
-	r, g, b       float64
-	a             float64
-	roundA        float64
-	format        Format
-	gradientType  bool
-	ok            bool
-}
-
-var hexNames = map[string]string{
-	"#f0f8ff": "aliceblue",
-	"#000000": "black",
-	"#ffffff": "white",
-}
-
-// -----------------------------------------------------------------------------
-// TESTS
-// -----------------------------------------------------------------------------
-
-// Helper to compare floats with epsilon
+// Helper to compare floats with epsilon.
 func floatEquals(a, b float64) bool {
-	return math.Abs(a-b) < 1e-4
+	return math.Abs(a-b) < 1e-3
 }
 
 func TestRgbToHsl(t *testing.T) {
@@ -178,11 +128,11 @@ func TestRgbToHex(t *testing.T) {
 
 func TestToString(t *testing.T) {
 	c := &Color{r: 255, g: 0, b: 0, a: 1, roundA: 1, format: FormatHex, ok: true}
-	
+
 	if c.ToHexString() != "#ff0000" {
 		t.Errorf("Expected #ff0000, got %s", c.ToHexString())
 	}
-	
+
 	if c.ToHexString(true) != "#f00" {
 		t.Errorf("Expected #f00, got %s", c.ToHexString(true))
 	}

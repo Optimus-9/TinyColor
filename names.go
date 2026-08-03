@@ -155,8 +155,14 @@ var Names = map[string]string{
 var HexNames map[string]string
 
 func init() {
-	HexNames = make(map[string]string)
-	for k, v := range Names {
-		HexNames[v] = k
+	HexNames = make(map[string]string, len(Names))
+	for name, hex := range Names {
+		// Names may store abbreviated 3-char hex (e.g. "f00" for red).
+		// ToHex() always returns 6-char strings, so expand before inserting
+		// to ensure the reverse lookup in ToName() succeeds.
+		if len(hex) == 3 {
+			hex = string([]byte{hex[0], hex[0], hex[1], hex[1], hex[2], hex[2]})
+		}
+		HexNames[hex] = name
 	}
 }
