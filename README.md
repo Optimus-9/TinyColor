@@ -11,14 +11,23 @@ The original JS test suite is preserved in `tests/original/` for verification.
 
 ## Build
 
-To build the package:
+```sh
+make build
+```
+
+Or directly with Go:
 ```sh
 go build ./...
 ```
 
 ## Testing
 
-To run the native Go test suite (which includes 46 tests ported from the original JS suite):
+To run the native Go test suite (46 tests ported from the original JS suite):
+```sh
+make test
+```
+
+Or directly with Go:
 ```sh
 go test -v ./...
 ```
@@ -257,14 +266,53 @@ tc.Equals(color1, color2) // false
 
 ## JavaScript → Go API Mapping
 
-The Go API mirrors the original JavaScript API using Idiomatic Go conventions:
-- `tinycolor(input)` -> `New(input)`
-- `tinycolor.fromRatio(input)` -> `FromRatio(input)`
-- `.toRgb()` -> `.ToRgb() RGB`
-- `.toHexString()` -> `.ToHexString(...bool) string`
-- `.lighten()` -> `.Lighten(...float64) *Color`
+| JavaScript | Go |
+|---|---|
+| `tinycolor(input)` | `New(input)` |
+| `tinycolor.fromRatio(input)` | `FromRatio(input)` |
+| `.toRgb()` | `.ToRgb() RGB` |
+| `.toRgbString()` | `.ToRgbString() string` |
+| `.toHsl()` | `.ToHsl() HSL` |
+| `.toHslString()` | `.ToHslString() string` |
+| `.toHsv()` | `.ToHsv() HSV` |
+| `.toHsvString()` | `.ToHsvString() string` |
+| `.toHex()` | `.ToHex(...bool) string` |
+| `.toHexString()` | `.ToHexString(...bool) string` |
+| `.toHex8()` | `.ToHex8(...bool) string` |
+| `.toHex8String()` | `.ToHex8String(...bool) string` |
+| `.toName()` | `.ToName() (string, bool)` |
+| `.toString()` | `.ToString(...Format) string` |
+| `.toPercentageRgb()` | `.ToPercentageRgb() RGB` |
+| `.toPercentageRgbString()` | `.ToPercentageRgbString() string` |
+| `.toFilter(second?)` | `.ToFilter(...*Color) string` |
+| `.getAlpha()` | `.GetAlpha() float64` |
+| `.getBrightness()` | `.GetBrightness() float64` |
+| `.getLuminance()` | `.GetLuminance() float64` |
+| `.getFormat()` | `.GetFormat() Format` |
+| `.getOriginalInput()` | `.GetOriginalInput() interface{}` |
+| `.isValid()` | `.IsValid() bool` |
+| `.isDark()` | `.IsDark() bool` |
+| `.isLight()` | `.IsLight() bool` |
+| `.setAlpha(a)` | `.SetAlpha(float64) *Color` |
+| `.clone()` | `.Clone() *Color` |
+| `.equals(c)` | `.Equals(*Color) bool` |
+| `.lighten(amt?)` | `.Lighten(...float64) *Color` |
+| `.brighten(amt?)` | `.Brighten(...float64) *Color` |
+| `.darken(amt?)` | `.Darken(...float64) *Color` |
+| `.desaturate(amt?)` | `.Desaturate(...float64) *Color` |
+| `.saturate(amt?)` | `.Saturate(...float64) *Color` |
+| `.greyscale()` | `.Greyscale() *Color` |
+| `.spin(degrees)` | `.Spin(float64) *Color` |
+| `.complement()` | `.Complement() *Color` |
+| `.triad()` | `.Triad() []*Color` |
+| `.tetrad()` | `.Tetrad() []*Color` |
+| `.splitcomplement()` | `.SplitComplement() []*Color` |
+| `.analogous(n?, slices?)` | `.Analogous(int, int) []*Color` |
+| `.monochromatic(n?)` | `.Monochromatic(int) []*Color` |
+| `tinycolor.readability(c1, c2)` | `Readability(*Color, *Color) float64` |
+| `tinycolor.isReadable(c1, c2, opts?)` | `IsReadable(*Color, *Color, ...ReadabilityOptions) bool` |
+| `tinycolor.mostReadable(base, list, opts?)` | `MostReadable(*Color, []*Color, ...ReadabilityOptions) *Color` |
 
-See `walkthrough.md` for the full parity mapping.
 
 ## Port Notes
 
